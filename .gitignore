@@ -49,11 +49,15 @@ htmlcov/
 # Environments
 .env
 .env.local
+.dbmate.env
 *.env
 
 # OS
 .DS_Store
 Thumbs.db
+
+# dbmate schema dump (auto-generated, migrations are source of truth)
+db/schema.sql
 
 # Data (keep samples, ignore large datasets)
 data/
