@@ -1,6 +1,13 @@
 """Core extraction engine and LLM adapters for observation-note-tagger."""
 
-from ont_core.config import ClaudeConfig, OllamaConfig, OpenAIConfig
+from ont_core.config import (
+    ClaudeConfig,
+    DatabaseConfig,
+    ExtractorConfig,
+    OllamaConfig,
+    OpenAIConfig,
+)
+from ont_core.extractor import ExtractionOutcome, Extractor, RunStats
 from ont_core.schemas import (
     Behavior,
     BehaviorType,
@@ -14,8 +21,13 @@ __all__ = [
     "BehaviorType",
     "BreedingCode",
     "BreedingEvidence",
+    "ExtractionOutcome",
     "ExtractionResult",
-    "OllamaConfig",
+    "Extractor",
+    "RunStats",
     "ClaudeConfig",
+    "DatabaseConfig",
+    "ExtractorConfig",
+    "OllamaConfig",
     "OpenAIConfig",
 ]

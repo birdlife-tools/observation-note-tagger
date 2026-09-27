@@ -65,7 +65,41 @@ class TestOllamaAdapter:
 
         assert result.behaviors == []
         assert result.breeding_evidence is None
-        assert result.extraction_confidence == 0.0
+        assert result.extraction_confidence == 0.5  # Default when LLM doesn't provide
+
+    @pytest.mark.asyncio
+    async def test_extract_empty_dict_as_none(self, adapter, monkeypatch):
+        """Test that empty {} is converted to None for optional fields.
+
+        LLMs sometimes return {} instead of null for optional objects.
+        This caused validation errors before the fix.
+        """
+        mock_response = {
+            "response": json.dumps(
+                {
+                    "behaviors": [],
+                    "breeding_evidence": {},  # Empty dict instead of null
+                    "habitat_features": [],
+                    "life_stages": [],
+                    "count_detail": {},  # Empty dict instead of null
+                    "weather_conditions": None,
+                    "extraction_confidence": 0.7,
+                }
+            )
+        }
+
+        async def mock_post(url, **kwargs):
+            request = httpx.Request("POST", url)
+            return httpx.Response(200, json=mock_response, request=request)
+
+        monkeypatch.setattr(adapter._client, "post", mock_post)
+
+        result = await adapter.extract(note="Brief note", species="Test Bird")
+
+        # Empty dicts should be converted to None, not cause validation errors
+        assert result.breeding_evidence is None
+        assert result.count_detail is None
+        assert result.extraction_confidence == 0.7
 
     @pytest.mark.asyncio
     async def test_close(self, adapter):
