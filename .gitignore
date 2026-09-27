@@ -59,6 +59,12 @@ Thumbs.db
 # dbmate schema dump (auto-generated, migrations are source of truth)
 db/schema.sql
 
+# Seed data (local testing only, generated from real EBD data)
+db/seed.sql
+
+# Local scripts (not committed, for dev/testing)
+scripts/local/
+
 # Data (keep samples, ignore large datasets)
 data/
 !data-samples/
