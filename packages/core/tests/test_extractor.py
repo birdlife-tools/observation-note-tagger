@@ -3,7 +3,6 @@
 import json
 
 import pytest
-
 from ont_core.extractor import Extractor
 from ont_core.schemas import Behavior, BehaviorType, BreedingCode, BreedingEvidence
 
