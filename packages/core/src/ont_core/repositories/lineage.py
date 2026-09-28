@@ -1,57 +1,11 @@
-"""Lineage/provenance tracking for pipeline events."""
+"""Lineage/provenance tracking implementations."""
 
 from __future__ import annotations
 
 import json
-from typing import Protocol
 from uuid import UUID, uuid4
 
 from ont_core.repositories.base import BaseRepository
-
-
-class LineageRepository(Protocol):
-    """
-    Interface for lineage/provenance storage.
-
-    Implementations can use PostgreSQL, in-memory (for testing),
-    or any other backend.
-    """
-
-    async def record_event(
-        self,
-        entity_type: str,
-        entity_id: UUID,
-        event_type: str,
-        source_ref: dict,
-        parent_event_id: UUID | None = None,
-        created_by: str = "system",
-    ) -> UUID:
-        """Record a generic lineage event. Returns the event ID."""
-        ...
-
-    async def record_ingested(
-        self,
-        observation_id: UUID,
-        file_path: str,
-        line_number: int,
-        worker_id: int | None = None,
-    ) -> UUID:
-        """Record an observation ingest event."""
-        ...
-
-    async def record_extracted(
-        self,
-        extraction_id: UUID,
-        adapter: str,
-        model: str,
-        prompt: str,
-        response: str,
-        latency_ms: int,
-        parent_event_id: UUID | None = None,
-        worker_id: int | None = None,
-    ) -> UUID:
-        """Record an extraction event."""
-        ...
 
 
 class PostgresLineageRepository(BaseRepository):

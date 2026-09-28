@@ -8,9 +8,8 @@ import logging
 import signal
 import sys
 
-from ont_core.adapters.ollama import OllamaAdapter
-from ont_core.config import DatabaseConfig, ExtractorConfig, OllamaConfig
-from ont_core.extractor import Extractor
+from ont_core.config import AppConfig, DatabaseConfig, ExtractorConfig
+from ont_core.factory import create_extractor, create_llm_adapter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,9 +21,9 @@ logger = logging.getLogger(__name__)
 async def run_extract(args: argparse.Namespace) -> int:
     """Run the extraction engine."""
     # Load configs from environment
+    app_config = AppConfig()
     db_config = DatabaseConfig()
     extractor_config = ExtractorConfig()
-    ollama_config = OllamaConfig()
 
     # Override config from CLI args
     if args.batch or args.workers:
@@ -35,17 +34,17 @@ async def run_extract(args: argparse.Namespace) -> int:
             parallel_workers=args.workers or extractor_config.parallel_workers,
         )
 
+    logger.info(f"Backend: repo={app_config.repo_backend}, llm={app_config.llm_adapter}")
     logger.info(f"Database: {db_config.database_url}")
-    logger.info(f"Ollama: {ollama_config.base_url} model={ollama_config.model}")
     logger.info(
         f"Extractor: batch={extractor_config.batch_size}, "
         f"workers={extractor_config.parallel_workers}, "
         f"max_retries={extractor_config.max_retries}"
     )
 
-    # Create adapter and extractor
-    adapter = OllamaAdapter(ollama_config)
-    extractor = await Extractor.create(adapter, db_config, extractor_config)
+    # Create adapter and extractor via config-driven factory
+    adapter = create_llm_adapter(app_config)
+    extractor = await create_extractor(adapter, db_config, extractor_config, app_config)
 
     # Setup graceful shutdown
     def handle_signal(signum, frame):

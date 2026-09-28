@@ -4,14 +4,14 @@ import json
 
 import pytest
 from ont_core.repositories import (
-    ExtractionRepository,
     InMemoryLineageRepository,
+    PostgresExtractionRepository,
 )
 from ont_core.schemas import Behavior, BehaviorType, BreedingCode, BreedingEvidence
 
 
 class TestExtractionRepositoryJsonb:
-    """Tests for the ExtractionRepository._to_jsonb helper method."""
+    """Tests for the PostgresExtractionRepository._to_jsonb helper method."""
 
     @pytest.fixture
     def repo(self):
@@ -20,7 +20,7 @@ class TestExtractionRepositoryJsonb:
         class MockPool:
             pass
 
-        return ExtractionRepository(MockPool())
+        return PostgresExtractionRepository(MockPool())
 
     def test_none_value(self, repo):
         assert repo._to_jsonb(None) is None

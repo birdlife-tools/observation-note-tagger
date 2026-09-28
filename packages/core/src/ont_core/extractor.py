@@ -1,4 +1,8 @@
-"""Extractor engine — core extraction loop for observation notes."""
+"""Extractor engine — core extraction loop for observation notes.
+
+This module only depends on Protocols (interfaces), not implementations.
+Use factory.create_extractor() to get a fully-wired instance.
+"""
 
 from __future__ import annotations
 
@@ -9,19 +13,16 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-import asyncpg
-
-from ont_core.config import DatabaseConfig, ExtractorConfig
-from ont_core.repositories import (
-    ExtractionRepository,
-    LineageRepository,
-    ObservationRepository,
-    PostgresLineageRepository,
-)
+from ont_core.config import ExtractorConfig
 from ont_core.schemas import ExtractionResult
 
 if TYPE_CHECKING:
     from ont_core.adapters.base import LLMAdapter
+    from ont_core.repositories import (
+        ExtractionRepository,
+        LineageRepository,
+        ObservationRepository,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,10 @@ class Extractor:
 
     Fetches pending observations, calls LLM adapter, saves results.
     Uses FOR UPDATE SKIP LOCKED for safe parallel worker execution.
+
+    This class depends only on Protocols (interfaces), not implementations.
+    Use factory.create_extractor() to get a fully-wired instance with
+    PostgreSQL repositories, or inject your own implementations for testing.
     """
 
     def __init__(
@@ -73,34 +78,9 @@ class Extractor:
         self.lineage = lineage
         self.config = config or ExtractorConfig()
         self._stop_event: asyncio.Event | None = None
-        self._db_pool: asyncpg.Pool | None = None
-
-    @classmethod
-    async def create(
-        cls,
-        adapter: LLMAdapter,
-        db_config: DatabaseConfig | None = None,
-        extractor_config: ExtractorConfig | None = None,
-        observations: ObservationRepository | None = None,
-        extractions: ExtractionRepository | None = None,
-        lineage: LineageRepository | None = None,
-    ) -> Extractor:
-        """Factory method that creates DB pool and default repositories."""
-        db_cfg = db_config or DatabaseConfig()
-        pool = await asyncpg.create_pool(db_cfg.database_url, min_size=1, max_size=10)
-
-        obs_repo = observations or ObservationRepository(pool)
-        ext_repo = extractions or ExtractionRepository(pool)
-        lineage_repo = lineage or PostgresLineageRepository(pool)
-
-        instance = cls(adapter, obs_repo, ext_repo, lineage_repo, extractor_config)
-        instance._db_pool = pool
-        return instance
 
     async def close(self) -> None:
-        """Clean up resources."""
-        if self._db_pool:
-            await self._db_pool.close()
+        """Clean up adapter resources. DB pool cleanup is caller's responsibility."""
         await self.adapter.close()
 
     async def extract_one(

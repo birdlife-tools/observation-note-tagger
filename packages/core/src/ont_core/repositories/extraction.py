@@ -9,8 +9,8 @@ from uuid import UUID
 from ont_core.repositories.base import BaseRepository
 
 
-class ExtractionRepository(BaseRepository):
-    """PostgreSQL repository for extractions."""
+class PostgresExtractionRepository(BaseRepository):
+    """PostgreSQL implementation of ExtractionRepository."""
 
     async def create(
         self,

@@ -27,8 +27,8 @@ class ObservationRecord:
     longitude: Decimal | None = None
 
 
-class ObservationRepository(BaseRepository):
-    """PostgreSQL repository for observations."""
+class PostgresObservationRepository(BaseRepository):
+    """PostgreSQL implementation of ObservationRepository."""
 
     async def get_by_id(self, observation_id: UUID) -> ObservationRecord | None:
         """Fetch a single observation by ID."""
