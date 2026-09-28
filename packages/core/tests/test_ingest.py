@@ -104,6 +104,7 @@ class TestIngestEngine:
 
     def test_discover_files_skips_invalid(self, mock_engine):
         """Skips files that fail validation."""
+
         # Make validate_file return False for specific files
         def validate_side_effect(path):
             return "sampling" not in path.name
