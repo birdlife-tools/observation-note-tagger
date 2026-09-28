@@ -5,7 +5,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from ont_core.config import IngestConfig
 from ont_core.ingest import IngestEngine, IngestStats
 
