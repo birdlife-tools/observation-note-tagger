@@ -15,7 +15,9 @@ from ont_core.factory import (
     create_extractor,
     create_extractor_with_repos,
     create_llm_adapter,
+    create_parser,
 )
+from ont_core.parsers import EBirdParser, ParsedObservation, Parser
 from ont_core.repositories import (
     # Implementations - use at composition root
     BaseRepository,
@@ -69,6 +71,11 @@ __all__ = [
     "create_extractor",
     "create_extractor_with_repos",
     "create_llm_adapter",
+    "create_parser",
+    # Parsers
+    "EBirdParser",
+    "ParsedObservation",
+    "Parser",
     # Extractor
     "ExtractionOutcome",
     "ExtractionResult",

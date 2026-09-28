@@ -16,6 +16,9 @@ class AppConfig(BaseSettings):
     # LLM adapter: "ollama", "claude", or "openai"
     llm_adapter: Literal["ollama", "claude", "openai"] = "ollama"
 
+    # File parser: "ebird" (more can be added: "csv", "inaturalist", etc.)
+    parser: Literal["ebird"] = "ebird"
+
 
 class DatabaseConfig(BaseSettings):
     """Database configuration."""

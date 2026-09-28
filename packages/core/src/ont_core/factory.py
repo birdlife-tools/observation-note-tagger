@@ -3,6 +3,7 @@
 Swap backends via environment variables (no code changes):
   ONT_REPO_BACKEND=postgres|memory
   ONT_LLM_ADAPTER=ollama|claude|openai
+  ONT_PARSER=ebird
 
 This is the ONLY module that imports concrete implementations.
 Service layer (Extractor, Ingestor, etc.) depends only on Protocols.
@@ -24,6 +25,7 @@ from ont_core.config import (
 if TYPE_CHECKING:
     from ont_core.adapters.base import LLMAdapter
     from ont_core.extractor import Extractor
+    from ont_core.parsers import Parser
     from ont_core.repositories import (
         ExtractionRepository,
         IngestFailedRowRepository,
@@ -68,6 +70,23 @@ def create_llm_adapter(app_config: AppConfig | None = None) -> LLMAdapter:
 
     else:
         raise ValueError(f"Unknown LLM adapter: {cfg.llm_adapter}")
+
+
+def create_parser(app_config: AppConfig | None = None) -> Parser:
+    """
+    Create file parser based on config.
+
+    Set via: ONT_PARSER=ebird
+    """
+    cfg = app_config or AppConfig()
+
+    if cfg.parser == "ebird":
+        from ont_core.parsers import EBirdParser
+
+        return EBirdParser()
+
+    else:
+        raise ValueError(f"Unknown parser: {cfg.parser}")
 
 
 class RepositoryFactory:
