@@ -19,12 +19,14 @@ from ont_core.config import (
     AppConfig,
     DatabaseConfig,
     ExtractorConfig,
+    IngestConfig,
     OllamaConfig,
 )
 
 if TYPE_CHECKING:
     from ont_core.adapters.base import LLMAdapter
     from ont_core.extractor import Extractor
+    from ont_core.ingest import IngestEngine
     from ont_core.parsers import Parser
     from ont_core.repositories import (
         ExtractionRepository,
@@ -226,3 +228,44 @@ async def create_extractor_with_repos(
         lineage=lineage,
         config=extractor_config,
     )
+
+
+async def create_ingest_engine(
+    db_config: DatabaseConfig | None = None,
+    ingest_config: IngestConfig | None = None,
+    app_config: AppConfig | None = None,
+) -> IngestEngine:
+    """
+    Factory function to create a fully-wired IngestEngine.
+
+    Backends determined by config:
+      ONT_REPO_BACKEND=postgres|memory
+      ONT_PARSER=ebird
+
+    Returns an IngestEngine ready to process files.
+    """
+    from ont_core.ingest import IngestEngine
+
+    cfg = app_config or AppConfig()
+
+    # Create DB pool
+    pool = await create_db_pool(db_config)
+
+    # Create parser
+    parser = create_parser(cfg)
+
+    # Create repositories via factory
+    repo_factory = RepositoryFactory(pool, cfg)
+
+    engine = IngestEngine(
+        parser=parser,
+        observation_repo=repo_factory.observations(),
+        file_repo=repo_factory.ingest_files(),
+        failed_row_repo=repo_factory.ingest_failed_rows(),
+        lineage_repo=repo_factory.lineage(),
+        config=ingest_config or IngestConfig(),
+    )
+
+    # Store pool reference for cleanup
+    engine._db_pool = pool  # type: ignore[attr-defined]
+    return engine

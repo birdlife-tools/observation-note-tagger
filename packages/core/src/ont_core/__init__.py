@@ -5,6 +5,7 @@ from ont_core.config import (
     ClaudeConfig,
     DatabaseConfig,
     ExtractorConfig,
+    IngestConfig,
     OllamaConfig,
     OpenAIConfig,
 )
@@ -14,9 +15,11 @@ from ont_core.factory import (
     create_db_pool,
     create_extractor,
     create_extractor_with_repos,
+    create_ingest_engine,
     create_llm_adapter,
     create_parser,
 )
+from ont_core.ingest import IngestEngine, IngestStats
 from ont_core.parsers import EBirdParser, ParsedObservation, Parser
 from ont_core.repositories import (
     # Implementations - use at composition root
@@ -70,8 +73,13 @@ __all__ = [
     "create_db_pool",
     "create_extractor",
     "create_extractor_with_repos",
+    "create_ingest_engine",
     "create_llm_adapter",
     "create_parser",
+    # Ingest
+    "IngestConfig",
+    "IngestEngine",
+    "IngestStats",
     # Parsers
     "EBirdParser",
     "ParsedObservation",

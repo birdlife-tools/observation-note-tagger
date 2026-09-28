@@ -5,9 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from ont_core.repositories.base import BaseRepository
+
+if TYPE_CHECKING:
+    from ont_core.parsers.protocols import ParsedObservation
 
 
 @dataclass
@@ -29,6 +33,68 @@ class ObservationRecord:
 
 class PostgresObservationRepository(BaseRepository):
     """PostgreSQL implementation of ObservationRepository."""
+
+    async def bulk_insert(
+        self, observations: list[ParsedObservation], ingest_file_id: int
+    ) -> list[UUID]:
+        """
+        Bulk insert observations from parsed records.
+
+        Returns list of inserted observation IDs.
+        Uses COPY for efficiency on large batches.
+        """
+        if not observations:
+            return []
+
+        async with self.db.acquire() as conn:
+            # Use executemany for batch insert
+            # Each row needs: sampling_event_id, species_code, common_name,
+            # scientific_name, note_text, observation_date, country_code,
+            # state_code, locality_name, latitude, longitude, observation_count,
+            # observer_id, ingest_file_id, source_line, ebird_breeding_code
+            ids = await conn.fetch(
+                """
+                INSERT INTO observations (
+                    sampling_event_id, species_code, common_name, scientific_name,
+                    note_text, observation_date, country_code, state_code,
+                    locality_name, latitude, longitude, observation_count,
+                    observer_id, ingest_file_id, source_line, ebird_breeding_code
+                )
+                SELECT
+                    d.sampling_event_id, d.species_code, d.common_name,
+                    d.scientific_name, d.note_text, d.observation_date::date,
+                    d.country_code, d.state_code, d.locality_name,
+                    d.latitude::decimal, d.longitude::decimal, d.observation_count,
+                    d.observer_id, d.ingest_file_id::int, d.source_line::int,
+                    d.ebird_breeding_code
+                FROM unnest($1::text[], $2::text[], $3::text[], $4::text[],
+                           $5::text[], $6::text[], $7::text[], $8::text[],
+                           $9::text[], $10::text[], $11::text[], $12::text[],
+                           $13::text[], $14::text[], $15::text[], $16::text[])
+                AS d(sampling_event_id, species_code, common_name, scientific_name,
+                     note_text, observation_date, country_code, state_code,
+                     locality_name, latitude, longitude, observation_count,
+                     observer_id, ingest_file_id, source_line, ebird_breeding_code)
+                RETURNING id
+                """,
+                [o.checklist_id for o in observations],
+                [o.species_code for o in observations],
+                [o.common_name for o in observations],
+                [o.scientific_name for o in observations],
+                [o.note for o in observations],
+                [str(o.observation_date) for o in observations],
+                [o.country_code for o in observations],
+                [o.state_code for o in observations],
+                [o.locality for o in observations],
+                [str(o.latitude) if o.latitude else None for o in observations],
+                [str(o.longitude) if o.longitude else None for o in observations],
+                [o.observation_count for o in observations],
+                [o.observer_id for o in observations],
+                [str(ingest_file_id) for _ in observations],
+                [str(o.source_line) for o in observations],
+                [o.ebird_breeding_code for o in observations],
+            )
+            return [row["id"] for row in ids]
 
     async def get_by_id(self, observation_id: UUID) -> ObservationRecord | None:
         """Fetch a single observation by ID."""

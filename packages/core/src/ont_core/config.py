@@ -67,3 +67,14 @@ class OpenAIConfig(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
     openai_timeout: int = 120
+
+
+class IngestConfig(BaseSettings):
+    """Ingest engine configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="INGEST_", env_file=".env", extra="ignore")
+
+    batch_size: int = 1000
+    max_retries: int = 3
+    checkpoint_interval: int = 5000
+    stale_timeout_minutes: int = 30
