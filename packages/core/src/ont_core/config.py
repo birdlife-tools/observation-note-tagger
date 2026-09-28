@@ -1,6 +1,23 @@
 """Configuration via environment variables (12-factor)."""
 
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class AppConfig(BaseSettings):
+    """Application-wide configuration for swappable backends."""
+
+    model_config = SettingsConfigDict(env_prefix="ONT_", env_file=".env", extra="ignore")
+
+    # Repository backend: "postgres" or "memory" (for testing)
+    repo_backend: Literal["postgres", "memory"] = "postgres"
+
+    # LLM adapter: "ollama", "claude", or "openai"
+    llm_adapter: Literal["ollama", "claude", "openai"] = "ollama"
+
+    # File parser: "ebird" (more can be added: "csv", "inaturalist", etc.)
+    parser: Literal["ebird"] = "ebird"
 
 
 class DatabaseConfig(BaseSettings):
@@ -50,3 +67,14 @@ class OpenAIConfig(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
     openai_timeout: int = 120
+
+
+class IngestConfig(BaseSettings):
+    """Ingest engine configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="INGEST_", env_file=".env", extra="ignore")
+
+    batch_size: int = 1000
+    max_retries: int = 3
+    checkpoint_interval: int = 5000
+    stale_timeout_minutes: int = 30
