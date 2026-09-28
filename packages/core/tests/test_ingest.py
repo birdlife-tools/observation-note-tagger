@@ -43,6 +43,7 @@ class TestIngestEngine:
         """Create engine with mocked dependencies."""
         parser = MagicMock()
         parser.file_pattern = "ebd_*.txt"
+        parser.validate_file.return_value = True  # All files valid by default
 
         engine = IngestEngine(
             parser=parser,
@@ -78,6 +79,47 @@ class TestIngestEngine:
         with tempfile.TemporaryDirectory() as tmpdir:
             files = mock_engine._discover_files(Path(tmpdir))
             assert files == []
+
+    def test_discover_files_recursive(self, mock_engine):
+        """Discovers files in subdirectories."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+
+            # Create nested structure
+            subdir1 = tmppath / "region1"
+            subdir2 = tmppath / "region2" / "2024"
+            subdir1.mkdir()
+            subdir2.mkdir(parents=True)
+
+            # Files at various levels
+            (tmppath / "ebd_root.txt").touch()
+            (subdir1 / "ebd_region1.txt").touch()
+            (subdir2 / "ebd_region2_deep.txt").touch()
+
+            files = mock_engine._discover_files(tmppath)
+
+            assert len(files) == 3
+            names = {f.name for f in files}
+            assert names == {"ebd_root.txt", "ebd_region1.txt", "ebd_region2_deep.txt"}
+
+    def test_discover_files_skips_invalid(self, mock_engine):
+        """Skips files that fail validation."""
+        # Make validate_file return False for specific files
+        def validate_side_effect(path):
+            return "sampling" not in path.name
+
+        mock_engine.parser.validate_file.side_effect = validate_side_effect
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+
+            (tmppath / "ebd_US_202401.txt").touch()  # Valid
+            (tmppath / "ebd_sampling_US_202401.txt").touch()  # Invalid (sampling)
+
+            files = mock_engine._discover_files(tmppath)
+
+            assert len(files) == 1
+            assert files[0].name == "ebd_US_202401.txt"
 
     def test_discover_files_sorted(self, mock_engine):
         """Returns files in sorted order."""

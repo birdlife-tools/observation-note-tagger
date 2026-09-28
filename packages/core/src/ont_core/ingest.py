@@ -128,10 +128,20 @@ class IngestEngine:
         return stats
 
     def _discover_files(self, directory: Path) -> list[Path]:
-        """Find files matching the parser's pattern."""
+        """Find files matching the parser's pattern recursively."""
         pattern = self.parser.file_pattern
-        files = sorted(directory.glob(pattern))
-        return [f for f in files if f.is_file()]
+        candidates = sorted(directory.rglob(pattern))
+
+        valid_files = []
+        for f in candidates:
+            if not f.is_file():
+                continue
+            if self.parser.validate_file(f):
+                valid_files.append(f)
+            else:
+                logger.info(f"Skipping (invalid format): {f.name}")
+
+        return valid_files
 
     async def _register_files(self, files: list[Path], force: bool) -> None:
         """Register discovered files in the database."""
