@@ -273,7 +273,9 @@ class IngestEngine:
                 batch.append(obs)
 
                 if len(batch) >= self.config.batch_size:
-                    inserted, failed = await self._insert_batch(batch, file_record.id, worker_id)
+                    inserted, failed = await self._insert_batch(
+                        batch, file_record.id, str(file_path), worker_id
+                    )
                     rows_inserted += inserted
                     rows_failed += failed
                     last_line = batch[-1].source_line
@@ -286,7 +288,9 @@ class IngestEngine:
 
             # Insert remaining batch
             if batch and not self._shutdown_requested:
-                inserted, failed = await self._insert_batch(batch, file_record.id, worker_id)
+                inserted, failed = await self._insert_batch(
+                    batch, file_record.id, str(file_path), worker_id
+                )
                 rows_inserted += inserted
                 rows_failed += failed
                 last_line = batch[-1].source_line
@@ -329,7 +333,9 @@ class IngestEngine:
 
         return stats
 
-    async def _insert_batch(self, batch: list, file_id: int, worker_id: int) -> tuple[int, int]:
+    async def _insert_batch(
+        self, batch: list, file_id: int, file_path: str, worker_id: int
+    ) -> tuple[int, int]:
         """Insert a batch of observations. Returns (inserted, failed) counts."""
         try:
             ids = await self.observation_repo.bulk_insert(batch, file_id)
@@ -338,7 +344,7 @@ class IngestEngine:
             for obs, obs_id in zip(batch, ids):
                 await self.lineage_repo.record_ingested(
                     observation_id=obs_id,
-                    file_path=str(batch[0].checklist_id),  # Will be actual file path
+                    file_path=file_path,
                     line_number=obs.source_line,
                     worker_id=worker_id,
                 )
@@ -347,10 +353,10 @@ class IngestEngine:
 
         except Exception as e:
             logger.warning(f"Batch insert failed, falling back to row-by-row: {e}")
-            return await self._insert_row_by_row(batch, file_id, worker_id)
+            return await self._insert_row_by_row(batch, file_id, file_path, worker_id)
 
     async def _insert_row_by_row(
-        self, batch: list, file_id: int, worker_id: int
+        self, batch: list, file_id: int, file_path: str, worker_id: int
     ) -> tuple[int, int]:
         """Fallback: insert rows one by one, recording failures."""
         inserted = 0
@@ -362,7 +368,7 @@ class IngestEngine:
                 if ids:
                     await self.lineage_repo.record_ingested(
                         observation_id=ids[0],
-                        file_path=str(obs.checklist_id),
+                        file_path=file_path,
                         line_number=obs.source_line,
                         worker_id=worker_id,
                     )
