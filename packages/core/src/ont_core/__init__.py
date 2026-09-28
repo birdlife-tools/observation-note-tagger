@@ -8,9 +8,13 @@ from ont_core.config import (
     OpenAIConfig,
 )
 from ont_core.extractor import ExtractionOutcome, Extractor, RunStats
-from ont_core.lineage import (
+from ont_core.repositories import (
+    BaseRepository,
+    ExtractionRepository,
     InMemoryLineageRepository,
     LineageRepository,
+    ObservationRecord,
+    ObservationRepository,
     PostgresLineageRepository,
 )
 from ont_core.schemas import (
@@ -22,15 +26,19 @@ from ont_core.schemas import (
 )
 
 __all__ = [
+    "BaseRepository",
     "Behavior",
     "BehaviorType",
     "BreedingCode",
     "BreedingEvidence",
     "ExtractionOutcome",
+    "ExtractionRepository",
     "ExtractionResult",
     "Extractor",
     "InMemoryLineageRepository",
     "LineageRepository",
+    "ObservationRecord",
+    "ObservationRepository",
     "PostgresLineageRepository",
     "RunStats",
     "ClaudeConfig",

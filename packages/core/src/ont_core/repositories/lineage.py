@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Protocol
+from typing import Protocol
 from uuid import UUID, uuid4
 
-if TYPE_CHECKING:
-    import asyncpg
+from ont_core.repositories.base import BaseRepository
 
 
 class LineageRepository(Protocol):
@@ -55,11 +54,8 @@ class LineageRepository(Protocol):
         ...
 
 
-class PostgresLineageRepository:
+class PostgresLineageRepository(BaseRepository):
     """PostgreSQL implementation of LineageRepository."""
-
-    def __init__(self, db_pool: asyncpg.Pool):
-        self.db = db_pool
 
     async def record_event(
         self,
@@ -153,15 +149,17 @@ class InMemoryLineageRepository:
     ) -> UUID:
         """Record a lineage event in memory."""
         event_id = uuid4()
-        self.events.append({
-            "id": event_id,
-            "entity_type": entity_type,
-            "entity_id": entity_id,
-            "event_type": event_type,
-            "source_ref": source_ref,
-            "parent_event_id": parent_event_id,
-            "created_by": created_by,
-        })
+        self.events.append(
+            {
+                "id": event_id,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "event_type": event_type,
+                "source_ref": source_ref,
+                "parent_event_id": parent_event_id,
+                "created_by": created_by,
+            }
+        )
         return event_id
 
     async def record_ingested(
@@ -217,6 +215,7 @@ class InMemoryLineageRepository:
     def find_by_entity(self, entity_type: str, entity_id: UUID) -> list[dict]:
         """Find all events for a given entity."""
         return [
-            e for e in self.events
+            e
+            for e in self.events
             if e["entity_type"] == entity_type and e["entity_id"] == entity_id
         ]
