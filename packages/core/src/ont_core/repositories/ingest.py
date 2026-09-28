@@ -98,7 +98,7 @@ class PostgresIngestFileRepository(BaseRepository):
                 SET status = 'processing', updated_at = NOW()
                 WHERE id IN (
                     SELECT id FROM ingest_files
-                    WHERE status IN ('pending', 'processing')
+                    WHERE status = 'pending'
                     ORDER BY retry_count ASC, created_at ASC
                     LIMIT $1
                     FOR UPDATE SKIP LOCKED
@@ -207,7 +207,7 @@ class PostgresIngestFileRepository(BaseRepository):
                 UPDATE ingest_files
                 SET status = 'pending', updated_at = NOW()
                 WHERE status = 'processing'
-                  AND updated_at < NOW() - INTERVAL '%s minutes'
+                  AND updated_at < NOW() - make_interval(mins => $1)
                 """,
                 older_than_minutes,
             )
