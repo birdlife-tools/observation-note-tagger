@@ -4,6 +4,7 @@ import json
 
 import pytest
 from ont_core.extractor import Extractor
+from ont_core.lineage import InMemoryLineageRepository
 from ont_core.schemas import Behavior, BehaviorType, BreedingCode, BreedingEvidence
 
 
@@ -20,7 +21,11 @@ class TestToJsonb:
         class MockPool:
             pass
 
-        return Extractor(adapter=MockAdapter(), db_pool=MockPool())
+        return Extractor(
+            adapter=MockAdapter(),
+            db_pool=MockPool(),
+            lineage=InMemoryLineageRepository(),
+        )
 
     def test_none_value(self, extractor):
         assert extractor._to_jsonb(None) is None

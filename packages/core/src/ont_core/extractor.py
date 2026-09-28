@@ -12,6 +12,7 @@ from uuid import UUID
 import asyncpg
 
 from ont_core.config import DatabaseConfig, ExtractorConfig
+from ont_core.lineage import LineageRepository, PostgresLineageRepository
 from ont_core.schemas import ExtractionResult
 
 if TYPE_CHECKING:
@@ -57,10 +58,12 @@ class Extractor:
         self,
         adapter: LLMAdapter,
         db_pool: asyncpg.Pool,
+        lineage: LineageRepository,
         config: ExtractorConfig | None = None,
     ):
         self.adapter = adapter
         self.db = db_pool
+        self.lineage = lineage
         self.config = config or ExtractorConfig()
         self._stop_event: asyncio.Event | None = None
 
@@ -70,11 +73,13 @@ class Extractor:
         adapter: LLMAdapter,
         db_config: DatabaseConfig | None = None,
         extractor_config: ExtractorConfig | None = None,
+        lineage: LineageRepository | None = None,
     ) -> Extractor:
-        """Factory method that creates DB pool."""
+        """Factory method that creates DB pool and default lineage repository."""
         db_cfg = db_config or DatabaseConfig()
         pool = await asyncpg.create_pool(db_cfg.database_url, min_size=1, max_size=10)
-        return cls(adapter, pool, extractor_config)
+        lineage_repo = lineage or PostgresLineageRepository(pool)
+        return cls(adapter, pool, lineage_repo, extractor_config)
 
     async def close(self) -> None:
         """Clean up resources."""
@@ -149,20 +154,15 @@ class Extractor:
                     extraction_status,
                 )
 
-                # Save audit record
-                await conn.execute(
-                    """
-                    INSERT INTO extraction_audit (
-                        extraction_id, llm_adapter, llm_model_version,
-                        prompt_text, raw_response, latency_ms
-                    ) VALUES ($1, $2, $3, $4, $5, $6)
-                    """,
-                    extraction_id,
-                    self.adapter.name,
-                    self.adapter.model_version,
-                    f"species={obs['common_name']}, note={obs['note_text'][:200]}...",
-                    result.model_dump_json(),
-                    latency_ms,
+                # Record lineage event for audit trail
+                await self.lineage.record_extracted(
+                    extraction_id=extraction_id,
+                    adapter=self.adapter.name,
+                    model=self.adapter.model_version,
+                    prompt=f"species={obs['common_name']}, note={obs['note_text'][:200]}...",
+                    response=result.model_dump_json(),
+                    latency_ms=latency_ms,
+                    worker_id=worker_id,
                 )
 
                 # Update observation status
