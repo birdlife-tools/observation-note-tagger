@@ -68,19 +68,23 @@ class PostgresLineageRepository(BaseRepository):
         latency_ms: int,
         parent_event_id: UUID | None = None,
         worker_id: int | None = None,
+        validation_issues: list[dict] | None = None,
     ) -> UUID:
         """Record an extraction event."""
+        source_ref = {
+            "adapter": adapter,
+            "model": model,
+            "prompt": prompt,
+            "response": response,
+            "latency_ms": latency_ms,
+        }
+        if validation_issues:
+            source_ref["validation_issues"] = validation_issues
         return await self.record_event(
             entity_type="extraction",
             entity_id=extraction_id,
             event_type="extracted",
-            source_ref={
-                "adapter": adapter,
-                "model": model,
-                "prompt": prompt,
-                "response": response,
-                "latency_ms": latency_ms,
-            },
+            source_ref=source_ref,
             parent_event_id=parent_event_id,
             created_by=f"worker-{worker_id}" if worker_id is not None else "system",
         )
@@ -145,19 +149,23 @@ class InMemoryLineageRepository:
         latency_ms: int,
         parent_event_id: UUID | None = None,
         worker_id: int | None = None,
+        validation_issues: list[dict] | None = None,
     ) -> UUID:
         """Record an extraction event."""
+        source_ref = {
+            "adapter": adapter,
+            "model": model,
+            "prompt": prompt,
+            "response": response,
+            "latency_ms": latency_ms,
+        }
+        if validation_issues:
+            source_ref["validation_issues"] = validation_issues
         return await self.record_event(
             entity_type="extraction",
             entity_id=extraction_id,
             event_type="extracted",
-            source_ref={
-                "adapter": adapter,
-                "model": model,
-                "prompt": prompt,
-                "response": response,
-                "latency_ms": latency_ms,
-            },
+            source_ref=source_ref,
             parent_event_id=parent_event_id,
             created_by=f"worker-{worker_id}" if worker_id is not None else "system",
         )

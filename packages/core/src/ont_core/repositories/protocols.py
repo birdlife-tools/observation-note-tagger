@@ -92,6 +92,7 @@ class LineageRepository(Protocol):
         latency_ms: int,
         parent_event_id: UUID | None = None,
         worker_id: int | None = None,
+        validation_issues: list[dict] | None = None,
     ) -> UUID: ...
 
 

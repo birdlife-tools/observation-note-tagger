@@ -19,6 +19,9 @@ class AppConfig(BaseSettings):
     # File parser: "ebird" (more can be added: "csv", "inaturalist", etc.)
     parser: Literal["ebird"] = "ebird"
 
+    # Validator: "grounding", "composite", or "none"
+    validator: Literal["grounding", "composite", "none"] = "grounding"
+
 
 class DatabaseConfig(BaseSettings):
     """Database configuration."""
