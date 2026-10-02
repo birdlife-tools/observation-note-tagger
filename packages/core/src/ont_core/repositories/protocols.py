@@ -48,7 +48,16 @@ class ExtractionRepository(Protocol):
         status: str,
     ) -> UUID: ...
 
+    async def get_by_id(self, extraction_id: UUID) -> dict | None: ...
+
     async def get_by_observation(self, observation_id: UUID) -> dict | None: ...
+
+    async def list_for_review(
+        self,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[dict], int]: ...
 
     async def update_status(
         self,
@@ -56,7 +65,7 @@ class ExtractionRepository(Protocol):
         status: str,
         reviewed_by: str | None = None,
         review_notes: str | None = None,
-    ) -> None: ...
+    ) -> bool: ...
 
     async def count_by_status(self) -> dict[str, int]: ...
 
@@ -94,6 +103,8 @@ class LineageRepository(Protocol):
         worker_id: int | None = None,
         validation_issues: list[dict] | None = None,
     ) -> UUID: ...
+
+    async def get_validation_issues(self, extraction_id: UUID) -> list[dict] | None: ...
 
 
 class IngestFileRepository(Protocol):

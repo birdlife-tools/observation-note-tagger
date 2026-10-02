@@ -1,4 +1,5 @@
 services:
+  # Infrastructure services (always start by default)
   postgres:
     image: postgres:16-alpine
     environment:
@@ -29,6 +30,38 @@ services:
     #         - driver: nvidia
     #           count: all
     #           capabilities: [gpu]
+
+  # Application services (start with --profile full)
+  api:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://ont:ont_dev@postgres:5432/ont
+      OLLAMA_BASE_URL: http://ollama:11434
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+      API_CORS_ORIGINS: "http://localhost:5173,http://localhost:3000,http://web:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+
+  web:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        ONT_API_URL: http://localhost:8000/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:

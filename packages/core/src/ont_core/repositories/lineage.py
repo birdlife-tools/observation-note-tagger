@@ -89,6 +89,25 @@ class PostgresLineageRepository(BaseRepository):
             created_by=f"worker-{worker_id}" if worker_id is not None else "system",
         )
 
+    async def get_validation_issues(self, extraction_id: UUID) -> list[dict] | None:
+        """Get validation issues for an extraction from its lineage event."""
+        async with self.db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT source_ref->'validation_issues' as issues
+                FROM lineage_events
+                WHERE entity_id = $1
+                  AND entity_type = 'extraction'
+                  AND event_type = 'extracted'
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                extraction_id,
+            )
+            if not row or not row["issues"]:
+                return None
+            return json.loads(row["issues"])
+
 
 class InMemoryLineageRepository:
     """In-memory implementation for testing."""
@@ -169,6 +188,14 @@ class InMemoryLineageRepository:
             parent_event_id=parent_event_id,
             created_by=f"worker-{worker_id}" if worker_id is not None else "system",
         )
+
+    async def get_validation_issues(self, extraction_id: UUID) -> list[dict] | None:
+        """Get validation issues for an extraction from its lineage event."""
+        events = self.find_by_entity("extraction", extraction_id)
+        for event in reversed(events):
+            if event["event_type"] == "extracted":
+                return event["source_ref"].get("validation_issues")
+        return None
 
     def clear(self) -> None:
         """Clear all events (useful in tests)."""

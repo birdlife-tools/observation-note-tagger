@@ -4,6 +4,9 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __ONT_API_URL__: JSON.stringify(process.env.ONT_API_URL || "/api"),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
