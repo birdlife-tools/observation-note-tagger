@@ -8,7 +8,10 @@ import httpx
 
 from ont_core.adapters.base import LLMAdapter
 from ont_core.config import OllamaConfig
-from ont_core.schemas import ExtractionResult
+from ont_core.schemas import BehaviorType, BreedingCode, ExtractionResult
+
+VALID_BEHAVIOR_TYPES = {t.value for t in BehaviorType}
+VALID_BREEDING_CODES = {c.value for c in BreedingCode}
 
 EXTRACTION_PROMPT = """\
 You are an expert ornithologist. Extract ONLY what is explicitly stated in this note.
@@ -88,19 +91,34 @@ class OllamaAdapter(LLMAdapter):
         breeding_evidence = extracted.get("breeding_evidence")
         if breeding_evidence == {}:
             breeding_evidence = None
+        elif breeding_evidence:
+            # Validate breeding code, drop if invalid
+            code = breeding_evidence.get("code")
+            if code not in VALID_BREEDING_CODES:
+                breeding_evidence = None
 
         count_detail = extracted.get("count_detail")
         if count_detail == {}:
             count_detail = None
 
+        # Sanitize behaviors - map unknown types to "other"
+        raw_behaviors = extracted.get("behaviors") or []
+        behaviors = []
+        for b in raw_behaviors:
+            if isinstance(b, dict):
+                b_type = b.get("type", "other")
+                if b_type not in VALID_BEHAVIOR_TYPES:
+                    b_type = "other"
+                behaviors.append({"type": b_type, "context": b.get("context")})
+
         return ExtractionResult(
-            behaviors=extracted.get("behaviors", []),
+            behaviors=behaviors,
             breeding_evidence=breeding_evidence,
-            habitat_features=extracted.get("habitat_features", []),
-            life_stages=extracted.get("life_stages", []),
+            habitat_features=extracted.get("habitat_features") or [],
+            life_stages=extracted.get("life_stages") or [],
             count_detail=count_detail,
             weather_conditions=extracted.get("weather_conditions"),
-            extraction_confidence=extracted.get("extraction_confidence", 0.5),
+            extraction_confidence=extracted.get("extraction_confidence") or 0.5,
             raw_note=note,
         )
 

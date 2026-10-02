@@ -126,6 +126,13 @@ class Extractor:
             if self.validator:
                 validation_result = self.validator.validate(result, obs.note_text)
                 validation_issues = [i.to_dict() for i in validation_result.issues]
+                if validation_issues:
+                    logger.info(
+                        f"{log_prefix}Validation found {len(validation_issues)} issue(s) "
+                        f"for {observation_id}: {[i['field'] for i in validation_issues]}"
+                    )
+            else:
+                logger.debug(f"{log_prefix}No validator configured")
 
             # Determine confidence (validator may suggest lower)
             final_confidence = result.extraction_confidence
@@ -285,6 +292,8 @@ class Extractor:
         FOR UPDATE SKIP LOCKED.
         """
         workers = num_workers or self.config.parallel_workers
+        validator_name = type(self.validator).__name__ if self.validator else "None"
+        logger.info(f"Validator: {validator_name}")
         self._stop_event = asyncio.Event()
         start_time = time.perf_counter()
 

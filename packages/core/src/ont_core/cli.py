@@ -132,7 +132,12 @@ async def run_extract(args: argparse.Namespace) -> int:
 
     # Create adapter and extractor via config-driven factory
     adapter = create_llm_adapter(app_config)
-    extractor = await create_extractor(adapter, db_config, extractor_config, app_config)
+    extractor = await create_extractor(
+        adapter=adapter,
+        db_config=db_config,
+        extractor_config=extractor_config,
+        app_config=app_config,
+    )
 
     # Setup graceful shutdown
     def handle_signal(signum, frame):
@@ -202,12 +207,8 @@ def main() -> int:
 
     # serve command
     serve_parser = subparsers.add_parser("serve", help="Run the API server")
-    serve_parser.add_argument(
-        "--host", type=str, help="Host to bind to (default: 0.0.0.0)"
-    )
-    serve_parser.add_argument(
-        "--port", "-p", type=int, help="Port to listen on (default: 8000)"
-    )
+    serve_parser.add_argument("--host", type=str, help="Host to bind to (default: 0.0.0.0)")
+    serve_parser.add_argument("--port", "-p", type=int, help="Port to listen on (default: 8000)")
     serve_parser.add_argument(
         "--reload", "-r", action="store_true", help="Enable auto-reload for development"
     )

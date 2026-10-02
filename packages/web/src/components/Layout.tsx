@@ -1,10 +1,13 @@
 import { ReactNode } from "react";
+import { Page } from "../App";
 
 interface LayoutProps {
   children: ReactNode;
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   return (
     <div className="min-h-screen font-sans">
       <header className="bg-birdlife-card border-b border-birdlife-border">
@@ -17,18 +20,26 @@ export function Layout({ children }: LayoutProps) {
               </span>
             </div>
             <nav className="flex gap-6 text-sm">
-              <a
-                href="#"
-                className="text-birdlife-primary font-medium border-b-2 border-birdlife-primary pb-0.5"
+              <button
+                onClick={() => onNavigate("review")}
+                className={`pb-0.5 ${
+                  currentPage === "review"
+                    ? "text-birdlife-primary font-medium border-b-2 border-birdlife-primary"
+                    : "text-birdlife-muted hover:text-birdlife-text"
+                }`}
               >
                 Review Queue
-              </a>
-              <a
-                href="#"
-                className="text-birdlife-muted hover:text-birdlife-text"
+              </button>
+              <button
+                onClick={() => onNavigate("stats")}
+                className={`pb-0.5 ${
+                  currentPage === "stats"
+                    ? "text-birdlife-primary font-medium border-b-2 border-birdlife-primary"
+                    : "text-birdlife-muted hover:text-birdlife-text"
+                }`}
               >
                 Statistics
-              </a>
+              </button>
             </nav>
           </div>
         </div>

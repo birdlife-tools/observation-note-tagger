@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from contextlib import asynccontextmanager
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Query
@@ -12,6 +13,18 @@ from pydantic import BaseModel
 
 from ont_core.config import APIConfig, DatabaseConfig
 from ont_core.factory import RepositoryFactory, create_db_pool
+
+
+def parse_jsonb(value: Any) -> Any:
+    """Parse JSONB string from asyncpg into Python object."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return value
 
 
 class ExtractionResponse(BaseModel):
@@ -114,10 +127,10 @@ def create_app() -> FastAPI:
                     observation_id=row["observation_id"],
                     status=row["status"],
                     extraction_confidence=row["extraction_confidence"],
-                    behaviors=row["behaviors"],
-                    breeding_evidence=row["breeding_evidence"],
-                    habitat_features=row["habitat_features"],
-                    life_stages=row["life_stages"],
+                    behaviors=parse_jsonb(row["behaviors"]),
+                    breeding_evidence=parse_jsonb(row["breeding_evidence"]),
+                    habitat_features=parse_jsonb(row["habitat_features"]),
+                    life_stages=parse_jsonb(row["life_stages"]),
                     note_text=row["note_text"],
                     common_name=row["common_name"],
                     scientific_name=row["scientific_name"],

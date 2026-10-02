@@ -174,19 +174,25 @@ class TestCompositeValidator:
         class AlwaysWarningValidator:
             def validate(self, result, note):
                 from ont_core.validators import ValidationIssue, ValidationResult
-                return ValidationResult.invalid([
-                    ValidationIssue(
-                        field="test",
-                        value="test",
-                        reason="Always warns",
-                        severity=IssueSeverity.WARNING,
-                    )
-                ], 0.7)
 
-        composite = CompositeValidator([
-            TextGroundingValidator(),
-            AlwaysWarningValidator(),
-        ])
+                return ValidationResult.invalid(
+                    [
+                        ValidationIssue(
+                            field="test",
+                            value="test",
+                            reason="Always warns",
+                            severity=IssueSeverity.WARNING,
+                        )
+                    ],
+                    0.7,
+                )
+
+        composite = CompositeValidator(
+            [
+                TextGroundingValidator(),
+                AlwaysWarningValidator(),
+            ]
+        )
         result = make_extraction(
             breeding_code=BreedingCode.FL,
             breeding_desc="flew over",
@@ -205,25 +211,24 @@ class TestValidationResult:
 
     def test_has_errors(self):
         from ont_core.validators import ValidationIssue
-        result = ValidationResult.invalid([
-            ValidationIssue("f", "v", "r", IssueSeverity.ERROR)
-        ])
+
+        result = ValidationResult.invalid([ValidationIssue("f", "v", "r", IssueSeverity.ERROR)])
         assert result.has_errors
         assert not result.has_warnings
 
     def test_has_warnings(self):
         from ont_core.validators import ValidationIssue
-        result = ValidationResult.invalid([
-            ValidationIssue("f", "v", "r", IssueSeverity.WARNING)
-        ])
+
+        result = ValidationResult.invalid([ValidationIssue("f", "v", "r", IssueSeverity.WARNING)])
         assert not result.has_errors
         assert result.has_warnings
 
     def test_to_dict(self):
         from ont_core.validators import ValidationIssue
-        result = ValidationResult.invalid([
-            ValidationIssue("field", "value", "reason", IssueSeverity.ERROR)
-        ], 0.5)
+
+        result = ValidationResult.invalid(
+            [ValidationIssue("field", "value", "reason", IssueSeverity.ERROR)], 0.5
+        )
         d = result.to_dict()
         assert d["is_valid"] is False
         assert len(d["issues"]) == 1

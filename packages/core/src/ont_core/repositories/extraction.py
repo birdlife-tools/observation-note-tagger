@@ -173,13 +173,19 @@ class PostgresExtractionRepository(BaseRepository):
                 if result == "UPDATE 0":
                     return False
 
+                # Map extraction status to observation status
+                # approved/rejected/completed → observation is "completed" (done processing)
+                obs_status = (
+                    "completed" if status in ("approved", "rejected", "completed") else status
+                )
+
                 await conn.execute(
                     """
                     UPDATE observations
-                    SET status = $1
+                    SET extraction_status = $1, updated_at = NOW()
                     WHERE id = (SELECT observation_id FROM extractions WHERE id = $2)
                     """,
-                    status,
+                    obs_status,
                     extraction_id,
                 )
                 return True
