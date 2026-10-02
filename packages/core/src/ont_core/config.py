@@ -19,6 +19,9 @@ class AppConfig(BaseSettings):
     # File parser: "ebird" (more can be added: "csv", "inaturalist", etc.)
     parser: Literal["ebird"] = "ebird"
 
+    # Validator: "grounding", "composite", or "none"
+    validator: Literal["grounding", "composite", "none"] = "grounding"
+
 
 class DatabaseConfig(BaseSettings):
     """Database configuration."""
@@ -78,3 +81,14 @@ class IngestConfig(BaseSettings):
     max_retries: int = 3
     checkpoint_interval: int = 5000
     stale_timeout_minutes: int = 30
+
+
+class APIConfig(BaseSettings):
+    """API server configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="API_", env_file=".env", extra="ignore")
+
+    host: str = "0.0.0.0"
+    port: int = 8000
+    reload: bool = False
+    cors_origins: str = "http://localhost:5173,http://localhost:3000"

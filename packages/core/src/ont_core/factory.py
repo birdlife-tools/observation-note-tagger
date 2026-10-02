@@ -35,6 +35,7 @@ if TYPE_CHECKING:
         LineageRepository,
         ObservationRepository,
     )
+    from ont_core.validators import Validator
 
 
 async def create_db_pool(config: DatabaseConfig | None = None) -> asyncpg.Pool:
@@ -89,6 +90,31 @@ def create_parser(app_config: AppConfig | None = None) -> Parser:
 
     else:
         raise ValueError(f"Unknown parser: {cfg.parser}")
+
+
+def create_validator(app_config: AppConfig | None = None) -> Validator | None:
+    """
+    Create validator based on config.
+
+    Set via: ONT_VALIDATOR=grounding|composite|none
+    """
+    cfg = app_config or AppConfig()
+
+    if cfg.validator == "none":
+        return None
+
+    elif cfg.validator == "grounding":
+        from ont_core.validators import TextGroundingValidator
+
+        return TextGroundingValidator()
+
+    elif cfg.validator == "composite":
+        from ont_core.validators import CompositeValidator, TextGroundingValidator
+
+        return CompositeValidator([TextGroundingValidator()])
+
+    else:
+        raise ValueError(f"Unknown validator: {cfg.validator}")
 
 
 class RepositoryFactory:
@@ -166,6 +192,7 @@ class RepositoryFactory:
 
 async def create_extractor(
     adapter: LLMAdapter | None = None,
+    validator: Validator | None = None,
     db_config: DatabaseConfig | None = None,
     extractor_config: ExtractorConfig | None = None,
     app_config: AppConfig | None = None,
@@ -176,8 +203,9 @@ async def create_extractor(
     Backends determined by config:
       ONT_REPO_BACKEND=postgres|memory
       ONT_LLM_ADAPTER=ollama|claude|openai
+      ONT_VALIDATOR=grounding|composite|none
 
-    Or pass custom adapter/repositories for testing.
+    Or pass custom adapter/validator/repositories for testing.
     """
     from ont_core.extractor import Extractor
 
@@ -185,6 +213,9 @@ async def create_extractor(
 
     # Create or use provided adapter
     llm_adapter = adapter or create_llm_adapter(cfg)
+
+    # Create validator if not provided (None means use config default)
+    extraction_validator = validator if validator is not None else create_validator(cfg)
 
     # Create DB pool if using postgres backend
     pool = None
@@ -200,6 +231,7 @@ async def create_extractor(
         extractions=repo_factory.extractions(),
         lineage=repo_factory.lineage(),
         config=extractor_config,
+        validator=extraction_validator,
     )
 
     # Store pool reference for cleanup
@@ -213,6 +245,7 @@ async def create_extractor_with_repos(
     extractions: ExtractionRepository,
     lineage: LineageRepository,
     extractor_config: ExtractorConfig | None = None,
+    validator: Validator | None = None,
 ) -> Extractor:
     """
     Create Extractor with explicit repository instances.
@@ -227,6 +260,7 @@ async def create_extractor_with_repos(
         extractions=extractions,
         lineage=lineage,
         config=extractor_config,
+        validator=validator,
     )
 
 

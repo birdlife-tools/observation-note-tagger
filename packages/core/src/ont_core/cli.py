@@ -9,7 +9,7 @@ import signal
 import sys
 from pathlib import Path
 
-from ont_core.config import AppConfig, DatabaseConfig, ExtractorConfig, IngestConfig
+from ont_core.config import APIConfig, AppConfig, DatabaseConfig, ExtractorConfig, IngestConfig
 from ont_core.factory import create_extractor, create_ingest_engine, create_llm_adapter
 
 logging.basicConfig(
@@ -85,6 +85,27 @@ async def run_ingest(args: argparse.Namespace) -> int:
             await engine._db_pool.close()
 
 
+def run_serve(args: argparse.Namespace) -> int:
+    """Run the API server."""
+    import uvicorn
+
+    api_config = APIConfig()
+
+    host = args.host or api_config.host
+    port = args.port or api_config.port
+    reload = args.reload or api_config.reload
+
+    logger.info(f"Starting API server on {host}:{port} (reload={reload})")
+
+    uvicorn.run(
+        "ont_core.api:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+    return 0
+
+
 async def run_extract(args: argparse.Namespace) -> int:
     """Run the extraction engine."""
     # Load configs from environment
@@ -111,7 +132,12 @@ async def run_extract(args: argparse.Namespace) -> int:
 
     # Create adapter and extractor via config-driven factory
     adapter = create_llm_adapter(app_config)
-    extractor = await create_extractor(adapter, db_config, extractor_config, app_config)
+    extractor = await create_extractor(
+        adapter=adapter,
+        db_config=db_config,
+        extractor_config=extractor_config,
+        app_config=app_config,
+    )
 
     # Setup graceful shutdown
     def handle_signal(signum, frame):
@@ -179,12 +205,22 @@ def main() -> int:
         "--all", "-a", action="store_true", help="Process all pending (runs until queue empty)"
     )
 
+    # serve command
+    serve_parser = subparsers.add_parser("serve", help="Run the API server")
+    serve_parser.add_argument("--host", type=str, help="Host to bind to (default: 0.0.0.0)")
+    serve_parser.add_argument("--port", "-p", type=int, help="Port to listen on (default: 8000)")
+    serve_parser.add_argument(
+        "--reload", "-r", action="store_true", help="Enable auto-reload for development"
+    )
+
     args = parser.parse_args()
 
     if args.command == "ingest":
         return asyncio.run(run_ingest(args))
     elif args.command == "extract":
         return asyncio.run(run_extract(args))
+    elif args.command == "serve":
+        return run_serve(args)
 
     return 0
 

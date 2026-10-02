@@ -23,6 +23,7 @@ if TYPE_CHECKING:
         LineageRepository,
         ObservationRepository,
     )
+    from ont_core.validators import ValidationResult, Validator
 
 logger = logging.getLogger(__name__)
 
@@ -71,12 +72,14 @@ class Extractor:
         extractions: ExtractionRepository,
         lineage: LineageRepository,
         config: ExtractorConfig | None = None,
+        validator: Validator | None = None,
     ):
         self.adapter = adapter
         self.observations = observations
         self.extractions = extractions
         self.lineage = lineage
         self.config = config or ExtractorConfig()
+        self.validator = validator
         self._stop_event: asyncio.Event | None = None
 
     async def close(self) -> None:
@@ -117,8 +120,29 @@ class Extractor:
 
             latency_ms = int((time.perf_counter() - start_time) * 1000)
 
-            # Determine status based on confidence
-            needs_review = result.extraction_confidence < self.config.confidence_threshold
+            # Run validation if validator is configured
+            validation_result: ValidationResult | None = None
+            validation_issues: list[dict] = []
+            if self.validator:
+                validation_result = self.validator.validate(result, obs.note_text)
+                validation_issues = [i.to_dict() for i in validation_result.issues]
+                if validation_issues:
+                    logger.info(
+                        f"{log_prefix}Validation found {len(validation_issues)} issue(s) "
+                        f"for {observation_id}: {[i['field'] for i in validation_issues]}"
+                    )
+            else:
+                logger.debug(f"{log_prefix}No validator configured")
+
+            # Determine confidence (validator may suggest lower)
+            final_confidence = result.extraction_confidence
+            if validation_result and validation_result.suggested_confidence is not None:
+                final_confidence = min(final_confidence, validation_result.suggested_confidence)
+
+            # Determine status based on confidence and validation
+            needs_review = final_confidence < self.config.confidence_threshold
+            if validation_result and not validation_result.is_valid:
+                needs_review = True
             extraction_status = "needs_review" if needs_review else "completed"
             obs_status = "needs_review" if needs_review else "completed"
 
@@ -131,16 +155,17 @@ class Extractor:
                 life_stages=result.life_stages,
                 count_detail=result.count_detail,
                 weather_conditions=result.weather_conditions,
-                extraction_confidence=result.extraction_confidence,
+                extraction_confidence=final_confidence,
                 status=extraction_status,
             )
 
-            # Record lineage event for audit trail
+            # Record lineage event for audit trail (includes validation issues)
             await self.lineage.record_extracted(
                 extraction_id=extraction_id,
                 adapter=self.adapter.name,
                 model=self.adapter.model_version,
                 prompt=f"species={obs.common_name}, note={obs.note_text[:200]}...",
+                validation_issues=validation_issues if validation_issues else None,
                 response=result.model_dump_json(),
                 latency_ms=latency_ms,
                 worker_id=worker_id,
@@ -149,10 +174,13 @@ class Extractor:
             # Update observation status
             await self.observations.update_status(observation_id, obs_status)
 
+            validation_info = ""
+            if validation_issues:
+                validation_info = f", validation_issues={len(validation_issues)}"
             logger.info(
                 f"{log_prefix}Extracted {observation_id}: "
-                f"confidence={result.extraction_confidence:.2f}, "
-                f"behaviors={len(result.behaviors)}, latency={latency_ms}ms"
+                f"confidence={final_confidence:.2f}, "
+                f"behaviors={len(result.behaviors)}, latency={latency_ms}ms{validation_info}"
             )
 
             return ExtractionOutcome(
@@ -264,6 +292,8 @@ class Extractor:
         FOR UPDATE SKIP LOCKED.
         """
         workers = num_workers or self.config.parallel_workers
+        validator_name = type(self.validator).__name__ if self.validator else "None"
+        logger.info(f"Validator: {validator_name}")
         self._stop_event = asyncio.Event()
         start_time = time.perf_counter()
 
