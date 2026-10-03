@@ -221,7 +221,7 @@ class MyCustomAdapter:
 
 ### Schema Alignment
 
-All packages depend on [`birdlife-schema`](https://pypi.org/project/birdlife-schema/) for shared types. This ensures consistency across the birdlife-tools ecosystem.
+All packages depend on [`birdlife-schema`](https://github.com/birdlife-tools/birdlife-schema) for shared types. This ensures consistency across the birdlife-tools ecosystem.
 
 ## Community
 
