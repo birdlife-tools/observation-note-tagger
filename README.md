@@ -101,18 +101,72 @@ OLLAMA_MODEL=qwen2.5:7b
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph CLI["CLI (ont)"]
+        INGEST[ont ingest]
+        EXTRACT[ont extract]
+    end
+
+    subgraph Protocols["Extension Points (Protocols)"]
+        PARSER[[Parser Protocol]]
+        ADAPTER[[LLMAdapter Protocol]]
+        VALIDATOR[[Validator Protocol]]
+        REPO[[Repository Protocol]]
+    end
+
+    subgraph Implementations["Built-in Implementations"]
+        EBIRD[EBirdParser]
+        OLLAMA[OllamaAdapter]
+        CLAUDE[ClaudeAdapter]
+        GROUNDING[TextGroundingValidator]
+        PG_REPO[PostgresRepository]
+    end
+
+    subgraph Storage["PostgreSQL"]
+        OBS[(observations)]
+        EXT[(extractions)]
+        LINEAGE[(lineage_events)]
+    end
+
+    subgraph UI["Review UI"]
+        REACT[React Dashboard]
+        API[FastAPI]
+    end
+
+    INGEST --> PARSER
+    PARSER -.-> EBIRD
+    PARSER -. "custom" .-> CUSTOM_PARSER[Your Parser]
+    
+    EXTRACT --> ADAPTER
+    ADAPTER -.-> OLLAMA
+    ADAPTER -.-> CLAUDE
+    ADAPTER -. "custom" .-> CUSTOM_LLM[Your LLM]
+    
+    EXTRACT --> VALIDATOR
+    VALIDATOR -.-> GROUNDING
+    VALIDATOR -. "custom" .-> CUSTOM_VAL[Your Validator]
+
+    INGEST --> REPO
+    EXTRACT --> REPO
+    REPO -.-> PG_REPO
+    PG_REPO --> OBS
+    PG_REPO --> EXT
+    PG_REPO --> LINEAGE
+
+    API --> REPO
+    REACT --> API
+
+    style PARSER fill:#e1f5fe
+    style ADAPTER fill:#e1f5fe
+    style VALIDATOR fill:#e1f5fe
+    style REPO fill:#e1f5fe
+    style CUSTOM_PARSER fill:#fff3e0,stroke-dasharray: 5 5
+    style CUSTOM_LLM fill:#fff3e0,stroke-dasharray: 5 5
+    style CUSTOM_VAL fill:#fff3e0,stroke-dasharray: 5 5
 ```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Ingest    │───▶│   Extract   │───▶│   Review    │
-│   (CLI)     │    │  (LLM/NLP)  │    │   (React)   │
-└─────────────┘    └─────────────┘    └─────────────┘
-       │                  │                  │
-       ▼                  ▼                  ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  PostgreSQL │    │   Adapters  │    │   Lineage   │
-│observations │    │ Ollama/Claude│    │   Events    │
-└─────────────┘    └─────────────┘    └─────────────┘
-```
+
+**Extension points** (light blue) are Protocol interfaces — implement them to add custom parsers, LLM backends, validators, or storage.
 
 ## Database Schema
 
@@ -124,17 +178,54 @@ OLLAMA_MODEL=qwen2.5:7b
 
 ## Status
 
-🔧 **Phase 2 Complete** — Ingest pipeline + lineage tracking
+🔧 **Phase 3 Complete** — Review UI + validation layer
 
 - [x] Phase 1: Extractor engine with parallel workers
 - [x] Phase 2: Ingest pipeline with checkpointing
-- [ ] Phase 3: Review UI
-- [ ] Phase 4: API endpoints
-- [ ] Phase 5: PWA offline caching
+- [x] Phase 3: Review UI with TextGroundingValidator
+- [ ] Phase 4: GraphQL API + Claude adapter
+- [ ] Phase 5: Polish + deploy
+
+## Packages
+
+This project publishes **3 packages** for integration into your own pipelines:
+
+| Package | Install | Use Case |
+|---------|---------|----------|
+| `birdlife-ont-core` | `pip install birdlife-ont-core` | Schemas, protocols, types — build custom adapters |
+| `birdlife-ont` | `pip install birdlife-ont` | Full CLI + engines + adapters |
+| `@birdlife-tools/ont-ui` | `npm install @birdlife-tools/ont-ui` | React review components |
+
+### birdlife-ont-core
+
+The core package exposes Protocol interfaces for building custom adapters:
+
+```python
+from birdlife_ont_core import LLMAdapter, ExtractionResult
+
+class MyCustomAdapter:
+    """Implements LLMAdapter protocol."""
+    
+    @property
+    def name(self) -> str:
+        return "my-adapter"
+    
+    @property
+    def model_version(self) -> str:
+        return "v1.0"
+    
+    async def extract(self, note: str, species: str) -> ExtractionResult:
+        # Your extraction logic
+        ...
+```
+
+### Schema Alignment
+
+All packages depend on [`birdlife-schema`](https://pypi.org/project/birdlife-schema/) for shared types. This ensures consistency across the birdlife-tools ecosystem.
 
 ## Community
 
-[![Matrix](https://img.shields.io/badge/Matrix-Chat-black?logo=matrix)](https://matrix.to/#/#birdlife-tools:matrix.org)
+[![Matrix](https://img.shields.io/badge/Matrix-Chat-black?logo=matrix)](https://matrix.to/#/#observation-note-tagger:matrix.org)
 
 ## License
 

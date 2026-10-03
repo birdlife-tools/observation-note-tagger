@@ -6,7 +6,6 @@ import json
 
 import httpx
 
-from ont_core.adapters.base import LLMAdapter
 from ont_core.config import OllamaConfig
 from ont_core.schemas import BehaviorType, BreedingCode, ExtractionResult
 
@@ -48,8 +47,11 @@ CRITICAL: breeding_evidence.description must be a direct quote or close paraphra
 If the note just says "flew over" - that is NOT breeding evidence, use null."""
 
 
-class OllamaAdapter(LLMAdapter):
-    """Ollama adapter for local LLM inference."""
+class OllamaAdapter:
+    """Ollama adapter for local LLM inference.
+
+    Implements the LLMAdapter protocol for local Ollama models.
+    """
 
     def __init__(self, config: OllamaConfig | None = None):
         cfg = config or OllamaConfig()
