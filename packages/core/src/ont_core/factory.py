@@ -24,7 +24,7 @@ from ont_core.config import (
 )
 
 if TYPE_CHECKING:
-    from ont_core.adapters.base import LLMAdapter
+    from ont_core.adapters.protocols import LLMAdapter
     from ont_core.extractor import Extractor
     from ont_core.ingest import IngestEngine
     from ont_core.parsers import Parser

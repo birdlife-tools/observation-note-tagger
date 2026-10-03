@@ -17,7 +17,7 @@ from ont_core.config import ExtractorConfig
 from ont_core.schemas import ExtractionResult
 
 if TYPE_CHECKING:
-    from ont_core.adapters.base import LLMAdapter
+    from ont_core.adapters.protocols import LLMAdapter
     from ont_core.repositories import (
         ExtractionRepository,
         LineageRepository,
