@@ -1,7 +1,7 @@
 # Release Plan: birdlife-ont-core v0.1.0
 
 **Date:** 2026-10-15  
-**Status:** Planning
+**Status:** COMPLETE
 
 ---
 
@@ -40,16 +40,16 @@
 - [x] Add "Roadmap" section to README (done in Task 2)
 - [x] LLMAdapter Protocol already documented in packages/core/README.md
 
-### 5. Release
-- [ ] Commit all changes
-- [ ] Push to main (triggers release workflow)
-- [ ] Verify PyPI publish succeeded
-- [ ] Verify Matrix notification sent
+### 5. Release ✅
+- [x] Commit all changes
+- [x] Push to main (triggered release workflow)
+- [x] PyPI publish succeeded: https://pypi.org/project/birdlife-ont-core/0.1.0/
+- [x] Matrix notification sent (fixed room ID - no :matrix.org suffix)
 
-### 6. Post-release
-- [ ] Update birdlife.tech page (status: released, add PyPI link)
-- [ ] Update birdlife-tools/.github README (add version badge)
-- [ ] Update project memory files
+### 6. Post-release ✅
+- [x] Update birdlife.tech/tools page (status: released, PyPI link added)
+- [x] birdlife-tools/.github README already has v0.1.0 badge (done in Task 1)
+- [x] Update project memory files
 
 ---
 
