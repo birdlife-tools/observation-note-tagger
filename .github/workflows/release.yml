@@ -150,7 +150,7 @@ jobs:
           fi
 
           VERSION="${{ steps.version.outputs.version }}"
-          ROOM_ID="!ZFk4tbp2YDlMj4fNKZxHvtGhZ9Vudt21JgWP2B0qJoo:matrix.org"
+          ROOM_ID="!ZFk4tbp2YDlMj4fNKZxHvtGhZ9Vudt21JgWP2B0qJoo"
 
           curl -s -X PUT \
             "https://matrix.org/_matrix/client/v3/rooms/${ROOM_ID}/send/m.room.message/$(date +%s)" \
