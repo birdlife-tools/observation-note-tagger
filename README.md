@@ -53,7 +53,7 @@ ont extract --all --workers 2
 - **Graceful shutdown** — SIGINT/SIGTERM saves progress, no data loss
 
 ### Extraction Engine
-- **Swappable LLM adapters** — Ollama (local, free), Claude, OpenAI
+- **Swappable LLM adapters** — Ollama (local, free) built-in; Claude/OpenAI coming in v0.2
 - **Parallel workers** — concurrent extraction with safe job claiming
 - **Human-in-loop review** — low-confidence extractions routed for review
 - **Retry logic** — configurable retries with exponential backoff
@@ -83,7 +83,7 @@ ont extract [--all] [--workers N] [--batch N]
 ```bash
 # Backend selection
 ONT_REPO_BACKEND=postgres    # postgres | memory
-ONT_LLM_ADAPTER=ollama       # ollama | claude | openai
+ONT_LLM_ADAPTER=ollama       # ollama (v0.1), claude/openai coming v0.2
 ONT_PARSER=ebird             # ebird
 
 # Ingest config
@@ -118,7 +118,6 @@ flowchart TB
     subgraph Implementations["Built-in Implementations"]
         EBIRD[EBirdParser]
         OLLAMA[OllamaAdapter]
-        CLAUDE[ClaudeAdapter]
         GROUNDING[TextGroundingValidator]
         PG_REPO[PostgresRepository]
     end
@@ -140,7 +139,6 @@ flowchart TB
     
     EXTRACT --> ADAPTER
     ADAPTER -.-> OLLAMA
-    ADAPTER -.-> CLAUDE
     ADAPTER -. "custom" .-> CUSTOM_LLM[Your LLM]
     
     EXTRACT --> VALIDATOR
@@ -178,30 +176,31 @@ flowchart TB
 
 ## Status
 
-🔧 **Phase 3 Complete** — Review UI + validation layer
+[![v0.1.0](https://img.shields.io/badge/PyPI-v0.1.0-green)](https://pypi.org/project/birdlife-ont-core/)
+
+**v0.1.0** — Core extraction engine with OllamaAdapter
 
 - [x] Phase 1: Extractor engine with parallel workers
 - [x] Phase 2: Ingest pipeline with checkpointing
 - [x] Phase 3: Review UI with TextGroundingValidator
-- [ ] Phase 4: GraphQL API + Claude adapter
-- [ ] Phase 5: Polish + deploy
+- [ ] Phase 4: GraphQL API + Claude adapter (v0.2)
+- [ ] Phase 5: Integration tests + docs site (v0.3)
 
-## Packages
+## Installation
 
-This project publishes **3 packages** for integration into your own pipelines:
+```bash
+pip install birdlife-ont-core
+```
 
-| Package | Install | Use Case |
-|---------|---------|----------|
-| `birdlife-ont-core` | `pip install birdlife-ont-core` | Schemas, protocols, types — build custom adapters |
-| `birdlife-ont` | `pip install birdlife-ont` | Full CLI + engines + adapters |
-| `@birdlife-tools/ont-ui` | `npm install @birdlife-tools/ont-ui` | React review components |
+The package includes the full CLI, extraction engine, and OllamaAdapter.
 
-### birdlife-ont-core
+### Build Custom Adapters
 
-The core package exposes Protocol interfaces for building custom adapters:
+Implement the `LLMAdapter` protocol to add your own LLM backend:
 
 ```python
-from birdlife_ont_core import LLMAdapter, ExtractionResult
+from ont_core.adapters import LLMAdapter
+from ont_core.schemas import ExtractionResult
 
 class MyCustomAdapter:
     """Implements LLMAdapter protocol."""
@@ -218,6 +217,8 @@ class MyCustomAdapter:
         # Your extraction logic
         ...
 ```
+
+See [packages/core/README.md](packages/core/README.md) for full protocol documentation.
 
 ### Schema Alignment
 

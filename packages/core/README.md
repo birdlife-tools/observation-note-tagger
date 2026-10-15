@@ -8,6 +8,8 @@ Core extraction engine, protocols, and adapters for observation-note-tagger.
 pip install birdlife-ont-core
 ```
 
+> **v0.1.0:** Ships with OllamaAdapter (free, local LLM). Claude/OpenAI adapters coming in v0.2 — or implement your own via the `LLMAdapter` protocol below.
+
 ## Protocols (Extension Points)
 
 Build custom adapters by implementing these protocols:
@@ -112,7 +114,7 @@ extractor = await create_extractor()
 
 ```bash
 # Backend selection
-ONT_LLM_ADAPTER=ollama     # ollama | claude | openai
+ONT_LLM_ADAPTER=ollama     # ollama (v0.1), claude/openai coming in v0.2
 ONT_VALIDATOR=grounding    # grounding | composite | none
 ONT_REPO_BACKEND=postgres  # postgres | memory
 
@@ -120,6 +122,12 @@ ONT_REPO_BACKEND=postgres  # postgres | memory
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:7b
 ```
+
+## Roadmap
+
+- **v0.1.0** (current): OllamaAdapter, ingest pipeline, extraction engine, validation
+- **v0.2.0**: Claude and OpenAI adapters, GraphQL API
+- **v0.3.0**: Integration tests, documentation site
 
 ## License
 
